@@ -40,6 +40,6 @@ public class SocketServer extends WebSocketServer {
 
     @Override
     public void onStart() {
-        System.out.println("Server started successfully");
+        System.out.println("WebSocket started successfully");
     }
 }
