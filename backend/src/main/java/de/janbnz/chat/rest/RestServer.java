@@ -1,10 +1,7 @@
 package de.janbnz.chat.rest;
 
 import de.janbnz.chat.ChatServer;
-import de.janbnz.chat.rest.path.InfoPath;
-import de.janbnz.chat.rest.path.LoginPath;
-import de.janbnz.chat.rest.path.LogoutPath;
-import de.janbnz.chat.rest.path.RegisterPath;
+import de.janbnz.chat.rest.path.*;
 import io.javalin.Javalin;
 
 public class RestServer {
@@ -18,6 +15,7 @@ public class RestServer {
         this.app.get("/login", LoginPath.loginUser(server));
         this.app.get("/logout", LogoutPath.logout(server));
         this.app.get("/info", InfoPath.getInfo(server));
+        this.app.get("/messages", MessagesPath.getMessages(server));
 
         this.app.start(7070);
 

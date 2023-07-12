@@ -1,6 +1,7 @@
 package de.janbnz.chat.chat;
 
 import de.janbnz.chat.ChatServer;
+import org.json.JSONObject;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -73,6 +74,24 @@ public class ChatRegistry {
         });
     }
 
+    public CompletableFuture<List<JSONObject>> getMessages(String chatId) {
+        return this.server.getDatabase().executeQuery("SELECT * FROM chat_messages WHERE chat_id = ?", chatId).thenApplyAsync(set -> {
+            try (set) {
+                List<JSONObject> messages = new ArrayList<>();
+                while (set.next()) {
+                    messages.add(new JSONObject()
+                            .put("message_id", set.getString("message_id")).put("chat_id", chatId)
+                            .put("message", set.getString("message")).put("user_id", set.getString("user_id"))
+                            .put("sent_at", set.getLong("sent_at")));
+                }
+                return messages;
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+                return new ArrayList<>();
+            }
+        });
+    }
+
     public CompletableFuture<Chat> getChatById(String chatId) {
         return this.server.getDatabase().executeQuery("SELECT * FROM chats WHERE chat_id = ?", chatId).thenComposeAsync(resultSet -> {
             try {
@@ -97,6 +116,6 @@ public class ChatRegistry {
 
     public void storeMessage(String chatId, String message, String userId, long sentAt) {
         final String messageId = UUID.randomUUID().toString();
-        this.server.getDatabase().executeUpdate("INSERT INTO chat_messages(chat_id, message, user_id, sent_at) VALUES ('" + messageId + "', '" + chatId + "', '" + message + "', '" + userId + "', '" + sentAt + "');").join();
+        this.server.getDatabase().executeUpdate("INSERT INTO chat_messages(message_id, chat_id, message, user_id, sent_at) VALUES ('" + messageId + "', '" + chatId + "', '" + message + "', '" + userId + "', '" + sentAt + "');").join();
     }
 }

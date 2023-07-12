@@ -8,14 +8,11 @@ import org.json.JSONObject;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class SocketServer extends WebSocketServer {
 
     private final ChatServer server;
-
-    private final ArrayList<String> messages = new ArrayList<>();
-    private final HashMap<String, WebSocket> tokenConnections = new HashMap<>();
+    private final ArrayList<UserConnection> userConnections = new ArrayList<>();
 
     public SocketServer(ChatServer server, InetSocketAddress address) {
         super(address);
@@ -25,12 +22,12 @@ public class SocketServer extends WebSocketServer {
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
         System.out.println("New connection from " + conn.getRemoteSocketAddress());
-        messages.forEach(conn::send);
     }
 
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
         System.out.println("Closed " + conn.getRemoteSocketAddress() + " with exit code " + code + " additional info: " + reason);
+        userConnections.removeIf(userConnection -> userConnection.getConnection().equals(conn));
     }
 
     @Override
@@ -40,26 +37,32 @@ public class SocketServer extends WebSocketServer {
         if (message.isEmpty()) return;
         final JSONObject data = new JSONObject(message);
 
-        final String chatId = data.getString("chatId");
+        final String chatId = data.has("chatId") ? data.getString("chatId") : "";
         final String token = data.getString("token");
 
         this.server.getTokenGenerator().decodedJWT(token).thenAcceptAsync(jwt -> {
             if (jwt == null) return;
 
-            // User ID and WebSocket connection
-            tokenConnections.put(jwt.getIssuer(), conn);
-
+            final String userId = jwt.getIssuer();
             final String username = jwt.getClaim("name").asString();
+
+            // User ID and WebSocket connection
+            if (userConnections.stream().filter(user -> user.getUuid().equals(userId)).findAny().stream().findFirst().isEmpty())
+                userConnections.add(new UserConnection(userId, username, conn));
+
             data.remove("token");
             data.put("name", username);
+            data.put("sentAt", System.currentTimeMillis());
 
-            // TODO: store to database
-            if ("public".equals(chatId)) {
+            if ("".equals(chatId)) {
                 broadcast(data.toString());
-                messages.add(data.toString());
             } else {
-                // TODO: send to chat members
+                this.server.getChatRegistry().getMembers(chatId).thenAccept(memberIds ->
+                        this.userConnections.stream().filter(userConnection -> memberIds.contains(userConnection.getUuid()))
+                                .forEach(userConnection -> userConnection.getConnection().send(data.toString())));
             }
+
+            this.server.getChatRegistry().storeMessage(chatId, data.getString("message"), userId, System.currentTimeMillis());
         });
     }
 
