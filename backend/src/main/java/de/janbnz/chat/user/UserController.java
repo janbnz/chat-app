@@ -10,7 +10,6 @@ import org.mindrot.jbcrypt.BCrypt;
 import java.sql.SQLException;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.TimeUnit;
 
 public class UserController {
 
@@ -59,20 +58,29 @@ public class UserController {
                     return;
                 }
 
-                CompletableFuture.supplyAsync(() -> {
-                    String token = generator.getProvider().generateToken(new UserModel("", username, password));
+                CompletableFuture.supplyAsync(() -> this.getUUID(username).thenApply(uuid -> {
+                    String token = generator.getProvider().generateToken(new UserModel(uuid, username, password));
                     String responseBody = new JSONObject().put("response", token).toString();
                     return futureResponse.complete(new HttpResponse(HttpStatus.OK, responseBody));
-                });
+                }));
             });
         });
 
         return futureResponse;
     }
 
+    public CompletableFuture<String> getUUID(String username) {
+        final String sql = "SELECT user_id FROM accounts WHERE username = ?";
+        return this.getValue(sql, username);
+    }
+
     public CompletableFuture<String> getHashedPassword(String username) {
         final String sql = "SELECT password FROM accounts WHERE username = ?";
-        return database.executeQuery(sql, username).thenApplyAsync(resultSet -> {
+        return this.getValue(sql, username);
+    }
+
+    public CompletableFuture<String> getValue(String sql, Object... values) {
+        return database.executeQuery(sql, values).thenApplyAsync(resultSet -> {
             try (resultSet) {
                 if (resultSet == null || !resultSet.next()) return null;
                 return resultSet.getString(1);
