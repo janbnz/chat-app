@@ -14,6 +14,8 @@ public class SocketServer extends WebSocketServer {
     private final ChatServer server;
     private final ArrayList<UserConnection> userConnections = new ArrayList<>();
 
+    private final ArrayList<String> publicMessages = new ArrayList<>();
+
     public SocketServer(ChatServer server, InetSocketAddress address) {
         super(address);
         this.server = server;
@@ -22,6 +24,7 @@ public class SocketServer extends WebSocketServer {
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
         System.out.println("New connection from " + conn.getRemoteSocketAddress());
+        this.publicMessages.forEach(conn::send);
     }
 
     @Override
@@ -36,6 +39,16 @@ public class SocketServer extends WebSocketServer {
 
         if (message.isEmpty()) return;
         final JSONObject data = new JSONObject(message);
+
+        if (data.has("action")) {
+            switch (data.getString("action").toLowerCase()) {
+                case "load_public": {
+                    this.publicMessages.forEach(conn::send);
+                    break;
+                }
+            }
+            return;
+        }
 
         final String chatId = data.has("chatId") ? data.getString("chatId") : "";
         final String token = data.getString("token");
@@ -55,6 +68,7 @@ public class SocketServer extends WebSocketServer {
             data.put("sentAt", System.currentTimeMillis());
 
             if ("".equals(chatId)) {
+                this.publicMessages.add(data.toString());
                 broadcast(data.toString());
             } else {
                 this.server.getChatRegistry().getMembers(chatId).thenAccept(memberIds ->

@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { logout } from "../loginStore";
 	import { isLoggedIn } from "../loginStore";
-
+    import { loadToken } from '../loginStore.ts';
+    
 	var loginState: boolean;
 	isLoggedIn.subscribe((value) => loginState = value);
 </script>

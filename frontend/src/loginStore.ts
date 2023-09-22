@@ -1,12 +1,13 @@
 import { writable } from "svelte/store";
 import { goto } from '$app/navigation';
-import { setContext } from "svelte";
 
 export var isLoggedIn = writable(false);
 export var token = "";
 
+const BASE_URL = "http://localhost:7070"
+
 export function register(username: string, password: string) {
-    fetch(new Request("http://localhost:7070/register", {
+    fetch(new Request(BASE_URL + "/register", {
         method: 'POST',
         body: JSON.stringify({
             "username": username,
@@ -23,7 +24,7 @@ export function register(username: string, password: string) {
 }
 
 export function login(username: string, password: string) {
-    fetch(new Request("http://localhost:7070/login", {
+    fetch(new Request(BASE_URL + "/login", {
         method: 'POST',
         body: JSON.stringify({
             "username": username,
@@ -53,7 +54,7 @@ export function logout() {
         'Authorization': `Bearer ${token}`
     });
 
-    fetch(new Request("http://localhost:7070/logout", {
+    fetch(new Request(BASE_URL + "/logout", {
         method: 'POST',
         headers: headers
     })).then(response => {
@@ -89,7 +90,7 @@ function setCookie(name: String, value: String, days: number) {
         date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
         expires = "; expires=" + date.toUTCString();
     }
-    document.cookie = name + "=" + (value || "") + expires + "; SameSite=Strict; path=/; Secure;";
+    document.cookie = name + "=" + (value || "") + expires + "; SameSite=Lax; path=/;";
 }
 
 function getCookie(name: String) {
@@ -101,4 +102,18 @@ function getCookie(name: String) {
         if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
     }
     return "";
+}
+
+function getToken() {
+    return token;
+}
+
+export default {
+	login,
+    logout,
+    register,
+    getCookie,
+    setCookie,
+    loadToken,
+    getToken
 }

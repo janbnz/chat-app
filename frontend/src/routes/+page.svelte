@@ -1,9 +1,7 @@
 <script lang="ts">
 	import { token } from '../loginStore.ts';
     import { loadToken } from '../loginStore.ts';
-    
     loadToken();
-
 </script>
 
 
