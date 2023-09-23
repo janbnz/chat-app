@@ -3,6 +3,7 @@ import { goto } from '$app/navigation';
 
 export var isLoggedIn = writable(false);
 export var token = "";
+export var userId = "";
 
 const BASE_URL = "http://localhost:7070"
 
@@ -40,7 +41,9 @@ export function login(username: string, password: string) {
         }
     }).then(data => {
         token = data.response;
+        userId = data.id;
         setCookie('token', token, 30);
+        setCookie('userId', userId, 30);
         isLoggedIn.set(true);
         goto('/');
     }).catch(error => {
@@ -63,6 +66,7 @@ export function logout() {
             isLoggedIn.set(false);
             token = "";
             setCookie("token", "", -1);
+            setCookie("userId", "", -1);
             goto('/');
         } else {
             console.log("Error!");
@@ -74,8 +78,29 @@ export function logout() {
     });
 }
 
+export function uploadPicture(formData) {
+    const headers = new Headers({
+        'Authorization': `Bearer ${token}`
+    });
+
+      fetch(BASE_URL + "/profile_picture", {
+        method: 'POST',
+        body: formData,
+        headers: headers
+    }).then(response => {
+        if (response.status === 200) {
+            console.log("Bild erfolgreich hochgeladen!");
+        } else {
+            console.log("Fehler beim Hochladen des Bildes!");
+        }
+    }).catch(error => {
+        console.error("Fehler:", error);
+    });
+}
+
 export function loadToken() {
     token = getCookie('token');
+    userId = getCookie('userId');
     if (token === '') {
         isLoggedIn.set(false);
         return;
@@ -108,6 +133,10 @@ function getToken() {
     return token;
 }
 
+function getUserId() {
+    return userId;
+}
+
 export default {
 	login,
     logout,
@@ -115,5 +144,7 @@ export default {
     getCookie,
     setCookie,
     loadToken,
-    getToken
+    getToken,
+    uploadPicture,
+    getUserId
 }

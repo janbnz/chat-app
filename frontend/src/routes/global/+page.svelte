@@ -51,7 +51,7 @@
 			})}`;
 		}
 
-		let imageUrl = 'https://ui-avatars.com/api/?name=' + username + '&length=1&bold=true';
+		let imageUrl = "http://localhost:7070/profile_picture/" + loginStore.getUserId();
 		const newMessage = {
 			username,
 			date: formattedDate + ' Uhr',
