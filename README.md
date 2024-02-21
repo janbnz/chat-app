@@ -9,7 +9,7 @@ This project is a simple web socket based chat.
 ## Features
 
 - Java backend handling and broadcasting the messages
-- HTML/JavaScript frontend where messages can be sent
+- Svelte frontend where messages can be sent
 
 ## Screenshots
 ![image](https://github.com/janbnz/chat-app/assets/23404813/063519dc-cabd-4318-b0d6-8c14c77c1335)
